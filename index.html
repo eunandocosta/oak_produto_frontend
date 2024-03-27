@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Documento HTML</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header-wrapper">
+            <h1>Oak - Listador de produtos</h1>
+            <h2>Serviço de listagem de produtos na memória</h2>
+            <p><strong>Instrução: </strong>Inicie o servidor criado com Spring Boot.  
+            Enquanto o servidor rodar na sua máquina a lista permanecerá salva. 
+            Se você desligar o serviço a lista se perderá, pois não persiste em um banco de dados.
+            </p>
+        </div>
+        <div class="safe-area">
+            <form class="form" id="product-form">
+                <h2 class="section-title">Registrar produto</h2>
+                <div class="form-wrapper">
+                    <div class="input-wrapper">
+                        <label for="nome_produto">Produto</label>
+                        <input class="input-product" type="text" name="produto" id="nome_produto">
+                    </div> 
+                    <div class="input-wrapper">
+                        <label for="valor_produto">Valor</label>
+                        <input class="input-product" type="text" name="produto" id="valor_produto">
+                    </div> 
+                    <div class="input-wrapper">
+                        <label for="disponivel">Disponível</label>
+                        <input class="input-product" type="radio" name="produto" id="disponivel">
+                    </div> 
+                    <button class="primary-btn" type="submit" id="submit-btn" disabled>Enviar</button> 
+                </div>
+            </form>
+            <h2 class="section-title">Lista de Produtos</h2>
+            <ul id="product-list">
+                
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('product-form').addEventListener('input', function() {
+            var produtoInput = document.getElementById('nome_produto');
+            var valorInput = document.getElementById('valor_produto');
+            var disponivelInput = document.getElementById('disponivel').checked?true:false;
+            var submitBtn = document.getElementById('submit-btn');
+
+            if (produtoInput.value !== '' && valorInput.value !== '') {
+                submitBtn.disabled = false; 
+            } else {
+                submitBtn.disabled = true; 
+            }
+        });
+
+        document.getElementById('product-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var produtoInput = document.getElementById('nome_produto').value;
+            var valorInput = parseFloat(document.getElementById('valor_produto').value);
+            var disponivelInput = document.getElementById('disponivel').checked?true:false;
+            var submitBtn = document.getElementById('submit-btn');
+
+            var formData = {
+                nomeDoProduto: produtoInput,
+                valor: valorInput,
+                disponibilidade: disponivelInput
+            };
+
+            fetch('http://localhost:8080/api/inserir', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify(formData) 
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao enviar os dados.'); 
+                }
+                return response.json(); 
+            })
+            .then(data => {
+                console.log('Dados recebidos:', data); 
+                alert('Dados enviados com sucesso!'); 
+            })
+            .catch(error => {
+                console.error('Erro:', error); 
+                alert('Erro ao enviar os dados. Por favor, tente novamente.'); 
+            });
+        });
+
+        function fetchAndRenderProductList() {
+            fetch('http://localhost:8080/api/receber')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao receber os dados.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data);
+                    setInterval(fetchAndRenderProductList, 5000);
+                    renderProductList(data);
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                });
+        }
+
+        function renderProductList(produtos) {
+            const productList = document.getElementById('product-list');
+            productList.innerHTML = '';
+            produtos.forEach(item => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <strong>Nome do Produto:</strong> ${item.nomeDoProduto}<br>
+                    <strong>Valor:</strong> R$ ${item.valor.toFixed(2)}<br>
+                    <strong>Disponibilidade:</strong> ${item.disponibilidade ? 'Disponível' : 'Indisponível'}
+                `;
+                productList.appendChild(li);
+            });
+        }
+
+        fetchAndRenderProductList();
+    </script>
+</body>
+</html>
